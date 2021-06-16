@@ -4,14 +4,20 @@ This project implements the [Utility Emissions Channel](https://wiki.hyperledger
 
 ## Running the Fabric network and Express API
 
-1. Make sure you have Git, curl, Docker, and Docker Compose installed, or follow instructions from [Hyperledger Fabric Install Prerequisites](https://hyperledger-fabric.readthedocs.io/en/release-2.2/prereqs.html)
-2. From `utility-emissions-channel/`, copy over the Amazon Web Services (AWS) configuration template file with:
+1. Make sure you have Git, cURL, Docker, and Docker Compose installed, or follow instructions from [Hyperledger Fabric Install Prerequisites](https://hyperledger-fabric.readthedocs.io/en/release-2.2/prereqs.html)
 
+2. From `utility-emissions-channel`, copy over the Fabric network configuration settings template file with:
+
+```bash
+$ cp ./typescript_app/src/config/config.ts.example ./typescript_app/src/config/config.ts
+```
+
+3. From `utility-emissions-channel`, copy over the Amazon Web Services (AWS) configuration template file with:
 ```bash
 $ cp ./typescript_app/src/config/aws-config.js.template ./typescript_app/src/config/aws-config.js
 ```
 
-3. If you want to use AWS S3 service to store documents, then fill in AWS credentials in `typescript_app/src/config/aws-config.js`:
+4. If you want to use AWS S3 service to store documents, then fill in AWS credentials in `typescript_app/src/config/aws-config.js`:
 
 ```js
     exports.AWS_ACCESS_KEY_ID = 'your_access_key';
@@ -22,13 +28,13 @@ $ cp ./typescript_app/src/config/aws-config.js.template ./typescript_app/src/con
 
 Otherwise leave it unchanged, and you will be able to store your documents locally with serverless.
 
-4. From `utility-emissions-channel/`, copy over the Ethereum network configuration settings template file with:
+5. From `utility-emissions-channel/`, copy over the Ethereum network configuration settings template file with:
 
 ```bash
 $ cp ./typescript_app/src/config/networkConfig.ts.example ./typescript_app/src/config/networkConfig.ts
 ```
 
-5. Fill in Ethereum configuration settings in `typescript_app/src/config/networkConfig.ts`:
+6. Fill in Ethereum configuration settings in `typescript_app/src/config/networkConfig.ts`:
 
 ```js
     export const PRIVATE_KEY = "private_key_of_ethereum_dealer_wallet";
@@ -37,7 +43,15 @@ $ cp ./typescript_app/src/config/networkConfig.ts.example ./typescript_app/src/c
     export const INFURA_PROJECT_SECRET = "infura_secret";
 ```
 
-6.  Install the right binaries.  You will need the linux binaries to run inside of docker, as well as the binaries for your operating system.
+For the above you may need to start a new [Infura](https://infura.io/) project and use the credentials there for the project id and secret. 
+Regarding the Ethereum dealer wallet you will need for the private key, one option is [MetaMask](https://metamask.io/) which offers a handy Chrome extension.
+Moreover, you may also need to create a Goerli TestNet wallet. Detailed instructions regarding how to set this up can be found for example at [the Mudit blog](https://mudit.blog/getting-started-goerli-testnet/).
+We already have smart contracts under [net-emissions-token](https://github.com/hyperledger-labs/blockchain-carbon-accounting/blob/4a8c8c916127bdabed7734074fb9ae78e44e27cc/net-emissions-token-network/README.md) network.
+The Express API that connects to ethereum will call that to create emissions tokens. Please check the instructions for the `net-emissions-token-network` [here](https://github.com/hyperledger-labs/blockchain-carbon-accounting/blob/4a8c8c916127bdabed7734074fb9ae78e44e27cc/net-emissions-token-network/docs/using-the-react-application.md).
+Note for the `CONTRACT_ADDRESS` you can use the address of Ethereum contract required to connect to on the Goerli testnet, this can be found in the Settings section of your Infura project. 
+In particular, checkout the section "With Goerli testnet" below after following the instructions for installing the React application above therein. 
+
+7.  Install the right binaries.  You will need the linux binaries to run inside of docker, as well as the binaries for your operating system.
 
 ```bash
 $ cd docker-compose-setup
@@ -47,14 +61,16 @@ Install binaries for linux distribution.
 ```bash
 $ ./bootstrap.sh  2.2.1 1.4.9 -d -s
 ```
+
 If you are using a Mac, you will also need to get the Mac binaries.  In a separate directory, follow the steps from [Hyperledger Fabric Install Samples and Binaries](https://hyperledger-fabric.readthedocs.io/en/release-2.2/install.html) to install `fabric-samples` with a `bin/` directory.  Then move that `bin/` directory over to a `bin_mac/` directory inside  `docker-compose-setup`.  For example, I had installed `fabric-samples` in a `hyperledger` directory, so:
 
 ```bash
 $ mv ~/hyperledger/fabric-samples/bin/ ./bin_mac/
 ```
+
 Then modify the file `utility-emissions-channel/docker-compose-setup/scripts/invokeChaincode.sh` and change `./bin/peer` to `./bin_mac/peer`
 
-7.  Install the dependencies for the 
+8.  Install the dependencies for the 
 server.  This is a temporary fix as reported in [issue #71](https://github.com/hyperledger-labs/blockchain-carbon-accounting/issues/71)
 
 From `utility-emissions-channel/`:
@@ -64,15 +80,21 @@ $ cd typescript_app
 $ npm install
 ```
 
-8.  From `utilities-emissions-channel/docker-compose-setup`, run the start script (includes the reset script which resets the Fabric state):
+9.  From `utilities-emissions-channel/docker-compose-setup`, run the start script (includes the reset script which resets the Fabric state):
 
-Start network, create channel, and deployCC:
+### Start network, create channel, and deployCC
 
+If you are doing it for the first time, run:
+```bash
+sh start.sh
+```
+
+Otherwise, run:
 ```bash
 sh ./scripts/reset.sh && sh start.sh
 ```
 
-9. Follow the instructions under **Steps to seed the Fabric database** to initialize the Fabric network with emissions data to pull from when recording emissions.
+10. Follow the instructions under **Steps to seed the Fabric database** to initialize the Fabric network with emissions data to pull from when recording emissions.
 
 ## Seeding the Fabric database
 
