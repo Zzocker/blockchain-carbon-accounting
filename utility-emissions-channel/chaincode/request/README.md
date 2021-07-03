@@ -163,6 +163,9 @@ Chaincode on which data to be locked are present ,needs to support two method. T
   - Input
     - keys `[]string` : list of worldstate key for which lock needs to removed.
 
+
+**Flow of Locking Fabric Data taking carbon emissions chaincode**
+![Locker](docs/locker.png)
 ## Carbon Emission Use Case
 
 Multi ledger business logic **request** :
