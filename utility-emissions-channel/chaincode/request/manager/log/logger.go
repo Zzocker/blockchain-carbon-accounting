@@ -19,10 +19,13 @@ import (
 */
 var l customLogger
 
+// IsDev : for logging in development environment
+var IsDev bool
+
 const (
 	debugMessage string = " [ DEBUG ] "
 	infoMessage  string = " [ INFO ] "
-	errorMessage string = " [ERROR] "
+	errorMessage string = " [ ERROR ] "
 	callDepth    int    = 2
 )
 
@@ -34,6 +37,7 @@ type customLogger struct {
 }
 
 func InitLogger(isDebug bool) {
+	IsDev = isDebug
 	l = customLogger{
 		isDebug: isDebug,
 		infoL:   log.New(os.Stdout, infoMessage, log.Ldate|log.Ltime|log.Lshortfile|log.Lmsgprefix),
@@ -43,14 +47,14 @@ func InitLogger(isDebug bool) {
 }
 
 func Debug(v ...interface{}) {
-	if l.isDebug {
+	if !l.isDebug {
 		return
 	}
 	_ = l.debugL.Output(callDepth, fmt.Sprint(v...))
 }
 
 func Debugf(f string, v ...interface{}) {
-	if l.isDebug {
+	if !l.isDebug {
 		return
 	}
 	_ = l.debugL.Output(callDepth, fmt.Sprintf(f, v...))

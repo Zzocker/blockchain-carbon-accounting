@@ -1,24 +1,20 @@
 package manager
 
 import (
+	"request/manager/log"
+
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/hyperledger/fabric-protos-go/peer"
-	"request/manager/log"
 )
 
 // RequestManagerChaincode : manages state of a request
 // also maintains locks on fabric data
-// present on different chaincode installed on same channel.
+// present on one chaincode installed on same channel.
+// later will support multi chaincode install on same channel
 type RequestManagerChaincode struct{}
 
+// Init : store name of data chaincode
 func (*RequestManagerChaincode) Init(stub shim.ChaincodeStubInterface) peer.Response {
-	channelName := stub.GetChannelID()
-	log.Infof("Initializing Request Manager Chaincode on %s", channelName)
-	if err := stub.PutState(ccChannelKey, []byte(channelName)); err != nil {
-		log.Errorf("[%s] [%s] %s", errPuttingState, ccChannelKey, err.Error())
-		return shim.Error(err.Error())
-	}
-	log.Info("Chaincode initialized")
 	return shim.Success(nil)
 }
 

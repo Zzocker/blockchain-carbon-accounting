@@ -8,7 +8,7 @@ case $CMD in
         golangci-lint run
     ;;
     "test")
-        go test ./test/*
+        go test ./manager/*.go
     ;;
     *)
         echo "commend $CMD not supported"
