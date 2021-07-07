@@ -17,7 +17,7 @@ import (
 // returns : output that need to stored for later stage
 // output that will be directly sent to the client
 func lock(stub shim.ChaincodeStubInterface, reqId string, dataCCName string, method string, params model.DataChaincodeInput) (map[string][]byte, []byte, error) {
-	var fnTag = fmt.Sprintf("#unlock::%s", dataCCName)
+	var fnTag = fmt.Sprintf("#lock::%s", dataCCName)
 	log.Debugf("%s checking free lock state for %v", fnTag, params.Keys)
 	for _, key := range params.Keys {
 		k := buildLockKey(dataCCName, key)

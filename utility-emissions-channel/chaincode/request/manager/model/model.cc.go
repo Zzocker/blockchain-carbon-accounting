@@ -8,19 +8,19 @@ package model
 type DataChaincodeOutput struct {
 	// Keys : list of keys that need to locked or unlocked
 	// request manager chaincode
-	Keys []string
+	Keys []string `json:"keys"`
 
-	Output []DataChaincodeData
+	Output []DataChaincodeData `json:"output"`
 }
 
 // DataChaincodeData : output generaeted during call to data chancode
 type DataChaincodeData struct {
 	// Name : key of the Outputs map for StageData
 	// if Name = "OUTPUT" , request manager will send data directly to client
-	Name string
+	Name string `json:"name"`
 
 	// Data : vale of the Outputs map for StageData
-	Data []byte
+	Data []byte `json:"data"`
 
 	// ToInclude : whether to include this Output into stage Data or not
 	/* example : for getValidEmissions()
@@ -28,7 +28,7 @@ type DataChaincodeData struct {
 	Data : json.Marshal([]string{uuids})
 	ToInclude : true
 	*/
-	ToInclude bool
+	ToInclude bool `json:"toInclude"`
 }
 
 // DataChaincodeLockInput : input send to data chaincode

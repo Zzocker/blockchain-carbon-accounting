@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"fmt"
 	"request/manager/log"
 
 	"github.com/hyperledger/fabric-chaincode-go/shim"
@@ -25,11 +26,16 @@ func (*RequestManagerChaincode) Invoke(stub shim.ChaincodeStubInterface) peer.Re
 		log.Errorf("[%s] [%s]", errMethodUnsupported, methodName)
 		return shim.Error("not supported")
 	}
-	log.Infof("[Invoke] method = %s , args = %v", methodName, args)
-	return method(stub, args)
+	log.Infof("[Invoke] method = %s", methodName)
+	if len(args) != 1 {
+		return shim.Error(fmt.Sprintf("Invoke require one argument (JSON Bytes), but provided %d", len(args)))
+	}
+	return method(stub, []byte(args[0]))
 }
 
-var methodRegistry = map[string]func(stub shim.ChaincodeStubInterface, args []string) peer.Response{}
+var methodRegistry = map[string]func(stub shim.ChaincodeStubInterface, input []byte) peer.Response{
+	"stageUpdate": stageUpdate,
+}
 
 // ConfigureChaincode : configure chaincode instance.
 func (*RequestManagerChaincode) ConfigureChaincode() {
