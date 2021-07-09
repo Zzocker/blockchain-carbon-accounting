@@ -5,9 +5,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"os"
 	"request/manager"
+
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 
 func main() {

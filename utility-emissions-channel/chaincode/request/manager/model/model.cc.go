@@ -10,25 +10,9 @@ type DataChaincodeOutput struct {
 	// request manager chaincode
 	Keys []string `json:"keys"`
 
-	Output []DataChaincodeData `json:"output"`
-}
+	OutputToClient []byte `json:"outputToClient"`
 
-// DataChaincodeData : output generaeted during call to data chancode
-type DataChaincodeData struct {
-	// Name : key of the Outputs map for StageData
-	// if Name = "OUTPUT" , request manager will send data directly to client
-	Name string `json:"name"`
-
-	// Data : vale of the Outputs map for StageData
-	Data []byte `json:"data"`
-
-	// ToInclude : whether to include this Output into stage Data or not
-	/* example : for getValidEmissions()
-	Name : uuids
-	Data : json.Marshal([]string{uuids})
-	ToInclude : true
-	*/
-	ToInclude bool `json:"toInclude"`
+	OutputToStore map[string][]byte `json:"outputToStore"`
 }
 
 // DataChaincodeLockInput : input send to data chaincode

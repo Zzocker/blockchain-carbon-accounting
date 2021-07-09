@@ -17,6 +17,7 @@ export class UtilityEmissionsChannel{
 
     private readonly chanincodeName = 'utilityemissions';
     private readonly channelName  = 'utilityemissionchannel';
+    private readonly requestManagerCCName = 'requestmanager'
 
     private readonly log:Logger;
     get className():string{
@@ -127,6 +128,81 @@ export class UtilityEmissionsChannel{
             md5:jsonResult.md5,
             tokenId:jsonResult.tokenId,
         };
+    }
+    async getValidEmissionsData(userId:string,orgName:string,input:{uuids:string[]}):Promise<IEmissionRecord[]>{
+        const fnTag = '#getValidEmissionsData';
+        const caller = `${orgName}_${userId}`;
+        this.log.debug(`${fnTag} caller : ${caller} , input : %o`,input);
+        let jsonResult:any[];
+        try {
+            const reqInput = {
+                requestId : 'req-id-1',
+                name : 'GET_VALID_EMISSIONS',
+                stageState : 'FINISHED',
+                callerType: 'CLIENT',
+                fabricDataLocks: {
+                    utilityemissions : {
+                        methodName : 'getValidEmissions',
+                        input : {
+                            keys : input.uuids,
+                            params: null
+                        }
+                    }
+                }
+            }
+            const result = await this.opts.fabricClient.transact({
+                signingCredential: {
+                    keychainId : this.opts.keychainId,
+                    keychainRef: caller
+                },
+                channelName: this.channelName,
+                contractName: this.requestManagerCCName,
+                invocationType: FabricContractInvocationType.SEND,
+                methodName: 'stageUpdate',
+                params: [
+                    JSON.stringify(reqInput)
+                ]
+            });
+            jsonResult = JSON.parse(Buffer.from(JSON.parse(result.functionOutput).fabricDataLocks.utilityemissions,'base64').toString('utf-8'));
+        } catch (error) {
+            this.log.error(`${fnTag} failed fetch emission record : %o`,error);
+            throw error;
+        }
+
+        // try {
+        //     await this.emissionsRecordChecksum(jsonResult);
+        // } catch (error) {
+        //     this.log.debug(`${fnTag} %o`,error);
+        //     throw error;
+        // }
+        this.log.debug(`${fnTag} jsonResult = %o`,jsonResult)
+        const emissions:IEmissionRecord[] = [];
+        for (const record of jsonResult){
+
+            try {
+                await this.emissionsRecordChecksum(record);
+            } catch (error) {
+                this.log.debug(`${fnTag} %o`,error);
+                throw error;
+            }
+
+            emissions.push({
+                uuid : record.uuid,
+                utilityId : record.utilityId,
+                partyId : record.partyId,
+                fromDate : record.fromDate,
+                thruDate : record.thruDate,
+                emissionsAmount : record.emissionsAmount,
+                renewableEnergyUseAmount : record.renewableEnergyUseAmount,
+                nonrenewableEnergyUseAmount : record.nonrenewableEnergyUseAmount,
+                energyUseUom : record.energyUseUom,
+                factorSource : record.factorSource,
+                url : record.url,
+                md5 : record.md5,
+                tokenId : record.tokenId,
+            });
+        }
+        return emissions;
     }
 
     async getAllEmissionRecords(userId:string,orgName:string,input:{utilityId:string,partyId:string}):Promise<IEmissionRecord[]>{
@@ -298,19 +374,36 @@ export class UtilityEmissionsChannel{
         const caller = this.getUserKey(userId,orgName);
         this.log.debug(`${fnTag} caller : ${caller} input : %o`,input);
         try {
+            const params = {
+                tokenId: input.tokenId,
+                partyId: input.partyId
+            }
+            const reqInput = {
+                requestId : 'req-id-1',
+                name : 'UPDATE_EMISSIONS_TOKEN',
+                stageState : 'FINISHED',
+                isLast: true,
+                fabricDataFree: {
+                    utilityemissions : {
+                        methodName : 'updateEmissionsMintedToken',
+                        input : {
+                            keys : input.uuids,
+                            params: toBytes(JSON.stringify(params))
+                        }
+                    }
+                }
+            }
             await this.opts.fabricClient.transact({
                 signingCredential: {
                     keychainId : this.opts.keychainId,
                     keychainRef: caller,
                 },
                 channelName: this.channelName,
-                contractName: this.chanincodeName,
+                contractName: this.requestManagerCCName,
                 invocationType: FabricContractInvocationType.SEND,
-                methodName: 'updateEmissionsMintedToken',
+                methodName: 'stageUpdate',
                 params: [
-                    input.tokenId,
-                    input.partyId,
-                    ...input.uuids
+                    JSON.stringify(reqInput)
                 ]
             });
         } catch (error) {
@@ -350,3 +443,13 @@ export class UtilityEmissionsChannel{
         }
     }
 }
+
+// helper
+ function toBytes(s:string):number[]{
+    const out:number[] = []
+    var buffer = Buffer.from(s,'utf-8')
+    for (let i =0;i<buffer.length;i++){
+        out.push(buffer[i])
+    }
+    return out
+  }

@@ -8,6 +8,8 @@ import {
   UtilityLookupItemState,
   UtilityLookupItem,
 } from './utilityLookupItem';
+import { IRequestManagerInput, IRequestManagerOutput } from './requestManager';
+import { toBytes } from '../util/util';
 
 // EmissionsRecordContract : core bushiness logic of emissions record chaincode
 export class EmissionsRecordContract {
@@ -69,18 +71,53 @@ export class EmissionsRecordContract {
     await this.emissionsState.updateEmissionsRecord(record,recordI.uuid);
     return record.toBuffer();
   }
-  async updateEmissionsMintedToken(tokenId:string,partyId:string,uuids:string[]):Promise<Uint8Array>{
-    for (const uuid of uuids){
+  async updateEmissionsMintedToken(input:IRequestManagerInput):Promise<Uint8Array>{
+    let params:any
+    try {
+        params = JSON.parse(Buffer.from(input.params,'base64').toString('utf-8'))
+        if (!params){
+          console.log("error parsing params")
+          throw new Error("error parsing params")
+        }
+    } catch (error) {
+      console.log("error parsing params",error)
+      throw new Error("error parsing params")
+    }
+
+    for (const uuid of input.keys){
       const record = await this.emissionsState.getEmissionsRecord(uuid);
-      record.record.tokenId = tokenId;
-      record.record.partyId = SHA256(partyId).toString();
+      record.record.tokenId = params.tokenId;
+      record.record.partyId = SHA256(params.partyId).toString();
       await this.emissionsState.updateEmissionsRecord(record,uuid);
     }
-    return Buffer.from('SUCCESS');
+    const out:IRequestManagerOutput = {
+      keys : input.keys
+    }
+    return Buffer.from(JSON.stringify(out),'utf-8');
   }
   async getEmissionsData(uuid:string):Promise<Uint8Array>{
     const record = await this.emissionsState.getEmissionsRecord(uuid);
     return record.toBuffer();
+  }
+
+  async getValidEmissions(input:IRequestManagerInput):Promise<Uint8Array>{
+    const validEmissions:EmissionsRecordInterface[] = []
+    const validUUIDs:string[] = []
+    for (let uuid of input.keys){
+      const emissions = await this.emissionsState.getEmissionsRecord(uuid)
+      if (emissions.record.tokenId === null){
+          validEmissions.push(emissions.record)
+          validUUIDs.push(uuid)
+      }
+    }
+    const out:IRequestManagerOutput = {
+      keys: validUUIDs,
+      outputToClient: toBytes(JSON.stringify(validEmissions)),
+      outputToStore: {
+        "validUUIDs" : toBytes(JSON.stringify(validUUIDs))
+      }
+    }
+    return Buffer.from(JSON.stringify(out),'utf-8')
   }
   async getAllEmissionsData(utilityId:string, partyId:string):Promise<Uint8Array>{
     const partyIdsha256 = SHA256(partyId).toString();

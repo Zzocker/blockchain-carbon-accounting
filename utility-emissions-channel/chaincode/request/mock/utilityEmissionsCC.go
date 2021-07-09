@@ -81,18 +81,10 @@ func getValidEmissions(stub shim.ChaincodeStubInterface, args []string) peer.Res
 	}
 	validUUIdsRaw, _ := json.Marshal(uuidToLock)
 	out := model.DataChaincodeOutput{
-		Keys: uuidToLock,
-		Output: []model.DataChaincodeData{
-			{
-				Name:      "validUUIDs",
-				Data:      validUUIdsRaw,
-				ToInclude: true,
-			},
-			{
-				Name:      "OUTPUT",
-				Data:      output,
-				ToInclude: false,
-			},
+		Keys:           uuidToLock,
+		OutputToClient: output,
+		OutputToStore: map[string][]byte{
+			"validUUIDs": validUUIdsRaw,
 		},
 	}
 	outRaw, _ := json.Marshal(out)
@@ -146,7 +138,8 @@ func UpdateEmissionsWithToken(stub shim.ChaincodeStubInterface, args []string) p
 	// <<<<< extra
 	out := model.DataChaincodeOutput{
 		Keys:   uuids,
-		Output: nil,
+		OutputToClient: nil,
+		OutputToStore: nil,
 	}
 	outRaw, _ := json.Marshal(out)
 	return shim.Success(outRaw)

@@ -36,10 +36,11 @@ func lock(stub shim.ChaincodeStubInterface, reqId string, dataCCName string, met
 	paramsRaw, _ := json.Marshal(params)
 	resp := stub.InvokeChaincode(dataCCName, [][]byte{[]byte(method), paramsRaw}, "")
 	if resp.Status != shim.OK {
-		log.Errorf("%s %s method = %s parmas = %+v", fnTag, errInvokeChaincode, method, params)
+		log.Errorf("%s %s method = %s error = %s", fnTag, errInvokeChaincode, method, resp.GetMessage())
 		return nil, nil, fmt.Errorf(resp.GetMessage())
 	}
 	var ccOutput model.DataChaincodeOutput
+	log.Debugf("%s response = %s",fnTag,string(resp.GetPayload()))
 	err := json.Unmarshal(resp.Payload, &ccOutput)
 	if err != nil {
 		log.Errorf("%s %s error = %s", fnTag, errBadDataChaincodeOutput, err.Error())
@@ -60,25 +61,8 @@ func lock(stub shim.ChaincodeStubInterface, reqId string, dataCCName string, met
 			return nil, nil, err
 		}
 	}
-	log.Debugf("%s generating output for storing and sending to client", fnTag)
-	outputToStore := make(map[string][]byte)
-	var outputToClient []byte
-	for _, output := range ccOutput.Output {
-		if output.Name == "OUTPUT" && outputToClient == nil {
-			outputToClient = output.Data
-		} else if output.ToInclude {
-			outputToStore[output.Name] = output.Data
-		}
-	}
-	log.Debugf("%s output to client = %v", fnTag, string(outputToClient))
-	if log.IsDev {
-		log.Debugf("%s output to store : ", fnTag)
-		for k, v := range outputToStore {
-			log.Debugf("%s key = %s , value = %s", fnTag, k, string(v))
-		}
-	}
 	log.Debugf("%s keys = %v are locked", fnTag, ccOutput.Keys)
-	return outputToStore, outputToClient, nil
+	return ccOutput.OutputToStore, ccOutput.OutputToClient, nil
 }
 
 // 1. check lock state
@@ -129,25 +113,8 @@ func unlock(stub shim.ChaincodeStubInterface, reqId string, dataCCName string, m
 			return nil, nil, err
 		}
 	}
-	log.Debugf("%s generating output for storing and sending to client", fnTag)
-	outputToStore := make(map[string][]byte)
-	var outputToClient []byte
-	for _, output := range ccOutput.Output {
-		if output.Name == "OUTPUT" && outputToClient == nil {
-			outputToClient = output.Data
-		} else if output.ToInclude {
-			outputToStore[output.Name] = output.Data
-		}
-	}
-	log.Debugf("%s output to client = %v", fnTag, string(outputToClient))
-	if log.IsDev && len(outputToStore) != 0 {
-		log.Debugf("%s output to store : ", fnTag)
-		for k, v := range outputToStore {
-			log.Debugf("%s key = %s , value = %s", fnTag, k, string(v))
-		}
-	}
 	log.Debugf("%s keys = %v are unlocked", fnTag, ccOutput.Keys)
-	return outputToStore, outputToClient, nil
+	return ccOutput.OutputToStore, ccOutput.OutputToClient, nil
 }
 
 func buildLockKey(ccName, key string) string {

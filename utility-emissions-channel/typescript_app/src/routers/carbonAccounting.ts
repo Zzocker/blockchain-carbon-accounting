@@ -59,12 +59,12 @@ export class CarbonAccountingRouter{
         const userId = req.body.userId;
         const orgName = req.body.orgName;
         const partyId = req.body.partyId;
+        const emissionsRecordsToAudit = req.body.emissionsRecordsToAudit.toString().split(',');
         let automaticRetireDate = req.params.automaticRetireDate;
         const re = new RegExp(/^(-?(?:[1-9][0-9]*)?[0-9]{4})-(1[0-2]|0[1-9])-(3[01]|0[1-9]|[12][0-9])T(2[0-3]|[01][0-9]):([0-5][0-9]):([0-5][0-9])(\\.[0-9]+)?(Z)?$/);
         if (!re.test(automaticRetireDate)){
             automaticRetireDate = new Date().toISOString();
         }
-        const emissionsRecordsToAudit = req.body.emissionsRecordsToAudit.toString().split(',');
         // TODO : use fabric cactus connector to call utility emission chaincode
         this.log.debug(`${fnTag} fetching emissionRecord uuids=%o`,emissionsRecordsToAudit);
         const metadata:any = {};
@@ -88,20 +88,17 @@ export class CarbonAccountingRouter{
         const fetchedEmissionsRecords:IEmissionRecord[] = [];// stores fetched emissions records for updating tokenId on fabric after auditing
         // connect to fabric , request type : call
         // fetches details of emissionRecords with given uuids
-        for (const uuid of emissionsRecordsToAudit){
-            let emission:IEmissionRecord;
-            try {
-                emission = await this.opt.utilityEmissionChannel.getEmissionsData(userId,orgName,{uuid});
-                fetchedEmissionsRecords.push(emission);
-            } catch (error) {
-                this.log.debug(`${fnTag} failed to fetch ${uuid} : %o`,error);
-                continue;
-            }
-            if (emission.tokenId !==null){
-                const tokenIdSplit = emission.tokenId.split(':');
-                this.log.debug(`${fnTag} skipping emission Record with id = ${uuid},already audited to token ${tokenIdSplit[1]} on contract ${tokenIdSplit[0]}`);
-                continue;
-            }
+        let emissions:IEmissionRecord[]
+        try {
+            emissions = await this.opt.utilityEmissionChannel.getValidEmissionsData(userId,orgName,{uuids:emissionsRecordsToAudit})
+        } catch (error) {
+            this.log.debug(`${fnTag} failed to get valid emissions record ; %o`,error)
+            return res.status(500).json({
+                err : error
+            })
+        }
+        for (let emission of emissions){
+            const uuid = emission.uuid
 
             // check  timestamps to find overall rang of dates later
             const fetchedFromDate = toTimestamp(emission.fromDate);

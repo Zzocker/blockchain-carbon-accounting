@@ -7,6 +7,7 @@ import {
 import {  EmissionsRecordInterface } from './lib/emissions';
 
 import { EmissionsRecordContract } from './lib/emissionsRecordContract';
+import { IRequestManagerInput } from './lib/requestManager';
 import { UtilityEmissionsFactorInterface } from './lib/utilityEmissionsFactor';
 import {
   DivisionsInterface,
@@ -38,6 +39,7 @@ class EmissionsChaincode {
     recordEmissions: this.recordEmissions,
     updateEmissionsRecord: this.updateEmissionsRecord,
     getEmissionsData : this.getEmissionsData,
+    getValidEmissions:this.getValidEmissions,
     getAllEmissionsData:this.getAllEmissionsData,
     getAllEmissionsDataByDateRange: this.getAllEmissionsDataByDateRange,
     getAllEmissionsDataByDateRangeAndParty:this.getAllEmissionsDataByDateRangeAndParty
@@ -124,15 +126,23 @@ class EmissionsChaincode {
    */
    async updateEmissionsMintedToken(stub:ChaincodeStub,args:string[]):Promise<ChaincodeResponse>{
     logger.info(`updateEmissionsMintedToken method will args : ${args}`);
-    if (args.length <3){
-      logger.error(`${ErrInvalidArgument} : updateEmissionsMintedToken requires 3 or more args, but provided ${args.length}`);
-      return Shim.error(stringToBytes(`${ErrInvalidArgument} : updateEmissionsMintedToken requires 3 or more args, but provided ${args.length}`));
+    if (args.length !=1){
+      logger.error(`${ErrInvalidArgument} : updateEmissionsMintedToken requires 1 or more args, but provided ${args.length}`);
+      return Shim.error(stringToBytes(`${ErrInvalidArgument} : updateEmissionsMintedToken requires 1 or more args, but provided ${args.length}`));
     }
-    const tokenId = args[0];
-    const partyId = args[1];
-    const uuids = args.slice(2);
+    let input:IRequestManagerInput
     try {
-        await (new EmissionsRecordContract(stub)).updateEmissionsMintedToken(tokenId,partyId,uuids);
+      input = JSON.parse(args[0])
+    } catch (error) {
+      logger.info(`getValidEmissions invalid input : %o`,error)
+      return Shim.error(stringToBytes("invalid input object"))
+    }
+    if (!input){
+      logger.info(`getValidEmissions invalid input`)
+      return Shim.error(stringToBytes("invalid input object"))
+    }
+    try {
+        await (new EmissionsRecordContract(stub)).updateEmissionsMintedToken(input);
     } catch (error) {
         logger.error(error);
         return Shim.error(stringToBytes((error as Error).message));
@@ -157,6 +167,42 @@ class EmissionsChaincode {
     } catch (error) {
       logger.error(error);
       return Shim.error(stringToBytes((error as Error).message));
+    }
+    return Shim.success(byte);
+  }
+  async getValidEmissions(stub:ChaincodeStub,args:string[]):Promise<ChaincodeResponse>{
+    logger.info(`getValidEmissions method called with args : ${args}`);
+    if (args.length !== 1) {
+      logger.error(
+        `${ErrInvalidNumberOfArgument} : getValidEmissions requires 1 arg , but provided ${args.length}`,
+      );
+      return Shim.error(
+        stringToBytes(
+          `${ErrInvalidNumberOfArgument} : getValidEmissions requires 1 arg , but provided ${args.length}`,
+        ),
+      );
+    }
+    let input:IRequestManagerInput
+    try {
+      input = JSON.parse(args[0])
+    } catch (error) {
+      logger.info(`getValidEmissions invalid input : %o`,error)
+      return Shim.error(stringToBytes("invalid input object"))
+    }
+    if (!input){
+      logger.info(`getValidEmissions invalid input`)
+      return Shim.error(stringToBytes("invalid input object"))
+    }
+
+    let byte:Uint8Array;
+    try {
+      byte = await (new EmissionsRecordContract(stub)).getValidEmissions(input);
+    } catch (error) {
+      logger.error(error);
+      return {
+        status: 500,
+        message: (error as Error).message
+      } as ChaincodeResponse
     }
     return Shim.success(byte);
   }
